@@ -1,6 +1,32 @@
- # Merchant Adventure Game — Master Development Document
+ # Merchant Adventure Game — Master Game Design & Development Document
 
- ## 1\. Core Concept
+ **Repository:** `DungeonTextAdventure`\
+ **Current Development Stage:** Adventure Data Model\
+ **Game Design:** Complete\
+ **Vertical Slice Design:** Complete\
+ **Implementation:** Not yet started
+
+---
+
+ # 1\. Purpose of This Document
+
+ This document is the current master design and development-context document for the Merchant Adventure project.
+
+ It exists so development can continue across multiple ChatGPT conversations without needing to reconstruct the project's history from previous conversations.
+
+ The GitHub repository is the persistent source of truth for the project.
+
+ When continuing development in a new conversation, provide the current GitHub repository or relevant document link and instruct ChatGPT to read the current project documentation before making architectural or implementation decisions.
+
+ Do not restart the game design unless a serious architectural problem is discovered that requires reconsideration.
+
+ The current development task is:
+
+ > **Design the Adventure Data Model before writing substantial Unity code.**
+
+---
+
+ # 2\. Core Concept
 
  A text-based adventure/roguelite game where the player owns a shop in a dangerous, mysterious world.
 
@@ -43,32 +69,46 @@
 
  with another player.
 
- Another player can enter the same keywords and seed and receive the same generated adventure structure, while their actual experience can differ because their decisions and actions affect the dungeon state.
+ Another player entering the same keywords and seed should receive the same underlying generated adventure structure, while their actual experience can differ because their decisions and actions affect runtime dungeon state.
 
 ---
 
- # 2\. Core Game Fantasy
+ # 3\. Core Game Fantasy
 
  The player is both:
 
  - A shopkeeper
 - An adventurer
 
- The shop provides the long-term progression.
+ The shop provides long-term progression.
 
- The adventures provide the moment-to-moment gameplay.
+ The adventures provide moment-to-moment gameplay.
 
  The player goes out into the world to obtain interesting and valuable things, then returns home and decides what to do with them.
 
  The basic loop is:
 
 ```
-SHOP → PREPARE → ADVENTURE → SURVIVE → RETURN → SELL/KEEP → IMPROVE SHOP → ADVENTURE AGAIN
+SHOP
+  ↓
+PREPARE
+  ↓
+ADVENTURE
+  ↓
+SURVIVE
+  ↓
+RETURN
+  ↓
+SELL / KEEP / USE
+  ↓
+IMPROVE SHOP
+  ↓
+ADVENTURE AGAIN
 ```
 
 ---
 
- # 3\. Long-Term Goal
+ # 4\. Long-Term Goal
 
  The shop is not merely a menu between dungeon runs.
 
@@ -94,7 +134,7 @@ SHOP → PREPARE → ADVENTURE → SURVIVE → RETURN → SELL/KEEP → IMPROVE 
 
 ---
 
- # 4\. Adventure System
+ # 5\. Adventure System
 
  Before beginning an adventure, the player chooses three keywords.
 
@@ -123,35 +163,42 @@ SHOP → PREPARE → ADVENTURE → SURVIVE → RETURN → SELL/KEEP → IMPROVE 
 
 ---
 
- # 5\. Seeds
+ # 6\. Seeds
 
  Every adventure receives a deterministic seed.
 
  The effective generation input is:
 
- > Seed + Keywords
+ > **Seed + Keywords**
 
  For example:
 
- > Forest / Ruins / Iron\
->  Seed: 58392014
+```
+Keywords:
+Forest / Ruins / Iron
+
+Seed:
+58392014
+```
 
  Another player entering those same values should receive the same fundamental adventure.
 
  This does NOT mean both players will have identical experiences.
 
- Player decisions affect runtime state.
+ The generated adventure is the shared foundation.
+
+ Runtime decisions create individual experiences.
 
  For example:
 
- Player A:
+ ### Player A
 
  - Gets the Iron Key
 - Opens the Iron Door
 - Finds the secret room
 - Defeats the boss
 
- Player B:
+ ### Player B
 
  - Avoids the goblins
 - Never obtains the key
@@ -165,7 +212,38 @@ SHOP → PREPARE → ADVENTURE → SURVIVE → RETURN → SELL/KEEP → IMPROVE 
 
 ---
 
- # 6\. Node-Based Adventure Map
+ # 7\. Deterministic Generation Requirement
+
+ The generator must be deterministic.
+
+ Given the same:
+
+```
+Seed + Keywords + Generator Version
+```
+
+ the generator should produce the same underlying adventure.
+
+ The inclusion of a **Generator Version** is an important architectural consideration.
+
+ If the generation algorithm changes in a future game update, old seeds may otherwise produce different adventures.
+
+ Therefore, generated adventures should eventually record the generator/content version necessary to reproduce them.
+
+ The conceptual generation identity is:
+
+```
+AdventureGenerationInput
+├── Seed
+├── Keywords
+└── GeneratorVersion
+```
+
+ The exact implementation will be determined during the data-model phase.
+
+---
+
+ # 8\. Node-Based Adventure Map
 
  The adventure is represented as a graph of connected nodes.
 
@@ -186,21 +264,35 @@ SHOP → PREPARE → ADVENTURE → SURVIVE → RETURN → SELL/KEEP → IMPROVE 
 - Exit
 - Other future event types
 
- The player clicks a node and is taken to an event screen.
+ The player selects a node and is taken to an event screen.
 
  The event is resolved before returning to the map.
 
  Example:
 
 ```
-START → Combat → Goblin Camp → Treasure → Iron Door → Ruins → Boss → Exit
+START
+  ↓
+Combat
+  ↓
+Goblin Camp
+  ↓
+Treasure
+  ↓
+Iron Door
+  ↓
+Ruins
+  ↓
+Boss
+  ↓
+EXIT
 ```
 
- The map should feel like an interconnected adventure rather than a simple linear sequence.
+ The actual adventure should feel like an interconnected adventure rather than a simple linear sequence.
 
 ---
 
- # 7\. Dungeon State
+ # 9\. Dungeon State
 
  Dungeon State is one of the most important systems in the game.
 
@@ -208,7 +300,7 @@ START → Combat → Goblin Camp → Treasure → Iron Door → Ruins → Boss �
 
  Player actions can change the state of the adventure.
 
- The state can include things such as:
+ The state can include:
 
  - Items obtained
 - Doors opened
@@ -224,9 +316,11 @@ START → Combat → Goblin Camp → Treasure → Iron Door → Ruins → Boss �
 
  Events can inspect the current dungeon state when determining what options are available.
 
+ The dungeon state belongs to the current adventure and should not be confused with permanent player progression.
+
 ---
 
- # 8\. Example: Iron Key and Iron Door
+ # 10\. Example: Iron Key and Iron Door
 
  Suppose an adventure contains:
 
@@ -260,7 +354,7 @@ START → Combat → Goblin Camp → Treasure → Iron Door → Ruins → Boss �
 
  This creates meaningful interaction between separate events.
 
- The goblin event does not need to directly know about the Iron Door.
+ The Goblin Camp event does not need to directly know about the Iron Door.
 
  The Iron Door does not need to know exactly where the key came from.
 
@@ -268,7 +362,7 @@ START → Combat → Goblin Camp → Treasure → Iron Door → Ruins → Boss �
 
 ---
 
- # 9\. State-Reactive Events
+ # 11\. State-Reactive Events
 
  Events can change depending on what happened earlier in the adventure.
 
@@ -298,7 +392,7 @@ ironDoorOpened = true
 
 ---
 
- # 10\. Event Architecture
+ # 12\. Event Architecture
 
  Events should be built around three fundamental concepts:
 
@@ -308,23 +402,29 @@ ironDoorOpened = true
 
  ## Iron Door
 
- Condition:
+ ### Condition
 
- > Player has Iron Key
+```
+PlayerHasItem("iron_key")
+```
 
- Choice:
+ ### Choice
 
- > Use Iron Key
+```
+Use Iron Key
+```
 
- Effects:
+ ### Effects
 
  - Remove Iron Key, if appropriate
 - Set `ironDoorOpened = true`
-- Open/reveal the passage
+- Open or reveal the passage
 
  Another event can then check:
 
- > `ironDoorOpened == true`
+```
+DungeonFlagIsTrue("ironDoorOpened")
+```
 
  This system should be generalized rather than hardcoded for individual events.
 
@@ -332,11 +432,13 @@ ironDoorOpened = true
 
 ---
 
- # 11\. Event Definitions vs Event Instances
+ # 13\. Event Definitions vs Event Instances
 
  This distinction is fundamental.
 
- An **EventDefinition** is authored game content.
+ ## EventDefinition
+
+ An `EventDefinition` is authored game content.
 
  Example:
 
@@ -344,7 +446,13 @@ ironDoorOpened = true
 
  It describes what a Goblin Camp can do.
 
- An **EventInstance** is a generated occurrence of that event inside a particular adventure.
+ It is reusable.
+
+ It should not contain mutable state belonging to one particular adventure.
+
+ ## EventInstance
+
+ An `EventInstance` is a generated occurrence of an EventDefinition inside a particular adventure.
 
  Example:
 
@@ -371,11 +479,51 @@ False
 
  One EventDefinition can therefore produce many different EventInstances across different adventures.
 
- The same principle should apply to other procedural content.
+ The same principle applies to other procedural content.
 
 ---
 
- # 12\. Adventure Generation
+ # 14\. Node Definition vs Node Instance
+
+ The same distinction applies to nodes.
+
+ A conceptual authored node/template may define what a node can contain or what role it serves.
+
+ A generated `NodeInstance` represents the actual node created inside one specific adventure.
+
+ For example:
+
+```
+Node Definition / Template:
+Combat Node
+
+Node Instance:
+Adventure Seed 58392014
+Node ID 7
+
+Position:
+Generated
+
+Connections:
+Node 3
+Node 8
+Node 11
+
+Event:
+Goblin Camp Instance
+
+Visited:
+False
+
+Resolved:
+False
+```
+
+ A generated adventure therefore contains runtime/generated instances rather than modifying the authored definitions.
+
+---
+
+ # 15\. Adventure Generation Pipeline
 
  The adventure generator should not simply randomly create disconnected rooms.
 
@@ -396,6 +544,8 @@ Node Graph
         ↓
 Place Events
         ↓
+Resolve Generated Content
+        ↓
 Validate Reachability
         ↓
 Validate Dependencies
@@ -403,9 +553,44 @@ Validate Dependencies
 Playable Adventure
 ```
 
+ The generator should be deterministic.
+
+ The validation process should also be deterministic.
+
 ---
 
- # 13\. Adventure Contracts
+ # 16\. AdventurePlan
+
+ The `AdventurePlan` represents the generator's intended structure for an adventure before or during final graph generation.
+
+ It should describe things such as:
+
+ - Major objectives
+- Required content
+- Optional content
+- Major event chains
+- Contracts
+- Dependencies
+- Intended progression
+- Required rewards
+- Major locations
+- Boss requirements
+- Exit requirements
+- Keyword-driven themes
+
+ The AdventurePlan is generated from:
+
+```
+Seed + Keywords
+```
+
+ It is not the player's runtime state.
+
+ The AdventurePlan should be treated as generation/planning data rather than persistent player data.
+
+---
+
+ # 17\. Adventure Contracts
 
  The generator must understand requirements.
 
@@ -429,37 +614,91 @@ Playable Adventure
 
  without ensuring that a valid solution exists.
 
+ Contracts describe intended gameplay requirements that the generator and validator must satisfy.
+
 ---
 
- # 14\. The Major Generation Problem
+ # 18\. Dependencies
+
+ Dependencies describe relationships between generated content.
+
+ Example:
+
+```
+Iron Door
+requires:
+Iron Key
+```
+
+ Another example:
+
+```
+Ancient Guardian
+requires:
+Iron Door opened
+```
+
+ Dependencies should preferably be represented as data rather than hardcoded direct references between individual events.
+
+ The intended architecture is:
+
+```
+Event A
+  ↓
+produces state
+  ↓
+Shared Runtime State
+  ↓
+Event B
+  ↓
+checks state
+```
+
+ rather than:
+
+```
+Event A directly modifies Event B
+```
+
+ This allows procedural content to remain reusable.
+
+---
+
+ # 19\. The Major Generation Problem
 
  The generator must prevent situations such as:
 
- ### Problem A
+ ## Problem A
 
  An Iron Key is generated but there is no Iron Door.
 
  This isn't necessarily an invalid adventure, but it may indicate wasted content unless the key has another purpose.
 
- ### Problem B
+ ## Problem B
 
  An Iron Door is generated but no Iron Key can be obtained.
 
  This is potentially an invalid adventure if the door is intended to be passable.
 
- ### Problem C
+ ## Problem C
 
  The Iron Key is behind the Iron Door.
 
  This creates an impossible dependency:
 
- > Need Key → Open Door → Get Key
+```
+Need Key
+   ↓
+Open Door
+   ↓
+Get Key
+```
 
- ### Problem D
+ ## Problem D
 
  The key exists, but the player cannot reach the event containing it because of another dependency.
 
- ### Problem E
+ ## Problem E
 
  The generator creates an event chain that is technically possible but practically unreachable.
 
@@ -467,7 +706,7 @@ Playable Adventure
 
 ---
 
- # 15\. Adventure Validation
+ # 20\. Adventure Validation
 
  Generated adventures should be tested before being considered valid.
 
@@ -484,6 +723,8 @@ Playable Adventure
 - Important content isn't accidentally isolated
 - The boss can be reached
 - The player has a valid path to completion
+- Required contracts can be satisfied
+- Generation does not violate required progression constraints
 
  If generation fails validation, the generator can retry using the same overall seed with a deterministic alternate generation attempt.
 
@@ -493,9 +734,44 @@ Playable Adventure
 
 ---
 
- # 16\. First Vertical Slice
+ # 21\. Deterministic Generation Attempts
 
- The first vertical slice is conceptually designed.
+ A generation attempt should itself be deterministic.
+
+ Conceptually:
+
+```
+Base Seed
+    +
+Keywords
+    +
+Generator Version
+    +
+Generation Attempt
+    ↓
+Deterministic RNG
+```
+
+ If attempt 0 fails validation, the generator can deterministically try attempt 1.
+
+ This means:
+
+```
+Seed 58392014
+Attempt 0 → Invalid
+Attempt 1 → Invalid
+Attempt 2 → Valid
+```
+
+ Another player using the same generation inputs will arrive at the same valid generated adventure.
+
+ This avoids using uncontrolled randomness to repair generation failures.
+
+---
+
+ # 22\. First Vertical Slice
+
+ The first vertical slice is conceptually designed but has not yet been implemented.
 
  Its purpose is to prove that the entire game loop works.
 
@@ -507,7 +783,7 @@ Playable Adventure
 
 ---
 
- # 17\. Iron Door Prototype Flow
+ # 23\. Iron Door Prototype Flow
 
  The complete prototype loop is:
 
@@ -565,11 +841,11 @@ Archive Expedition
 
 ---
 
- # 18\. First Prototype Keywords
+ # 24\. First Prototype Keywords
 
- The initial prototype can use:
+ The initial prototype uses:
 
- > Forest / Ruins / Iron
+ > **Forest / Ruins / Iron**
 
  These are primarily a demonstration of the keyword system.
 
@@ -577,29 +853,50 @@ Archive Expedition
 
 ---
 
- # 19\. First Prototype Events
+ # 25\. First Prototype Events
 
  The first adventure should contain approximately 10–15 nodes.
 
  Important events should include:
 
- ### Goblin Camp
+ ## Goblin Camp
 
  Contains the Iron Key.
 
- ### Iron Door
+ Purpose:
+
+ - Introduce combat
+- Provide the Iron Key
+- Teach basic attack linking
+
+ ## Iron Door
 
  Requires the Iron Key.
 
- ### State-Reactive Event
+ Purpose:
+
+ - Demonstrate conditions
+- Demonstrate inventory interaction
+- Demonstrate dungeon state
+
+ ## State-Reactive Event
 
  Changes based on whether the Iron Door was opened.
 
- ### Ancient Guardian
+ Purpose:
+
+ - Demonstrate state-reactive content
+
+ ## Ancient Guardian
 
  Acts as the major combat challenge/boss.
 
- ### Exit
+ Purpose:
+
+ - Test combat
+- Provide major reward
+
+ ## Exit
 
  Allows the player to successfully complete the adventure.
 
@@ -607,15 +904,15 @@ Archive Expedition
 
 ---
 
- # 20\. Combat System
+ # 26\. Combat System
 
  Combat is inspired by the attack-linking system from:
 
- > Legaia 2: Duel Saga
+ > **Legaia 2: Duel Saga**
 
  The game will NOT include the original game's MP/Spirit systems.
 
- Instead, the focus is on:
+ Instead, the focus is:
 
  > **Attack sequences + linked attacks + techniques**
 
@@ -641,7 +938,7 @@ LOW → LOW → HIGH
 
 ---
 
- # 21\. Physical Combat
+ # 27\. Physical Combat
 
  A weapon has an attack vocabulary and a collection of techniques.
 
@@ -676,19 +973,24 @@ LEFT → RIGHT → HIGH
 
  Example:
 
- > Iron Fang\
->  Increased damage\
->  Applies Armor Break
+ > Iron Fang
+
+ Effects:
+
+ - Increased damage
+- Applies Armor Break
 
 ---
 
- # 22\. Unknown Attack Sequences
+ # 28\. Unknown Attack Sequences
 
  Unknown combinations should not necessarily be completely useless.
 
  Example:
 
- > LOW → LEFT → HIGH
+```
+LOW → LEFT → HIGH
+```
 
  If this isn't a learned technique, it can still produce a basic improvised combination.
 
@@ -698,19 +1000,19 @@ LEFT → RIGHT → HIGH
 
 ---
 
- # 23\. Enemy Design
+ # 29\. Enemy Design
 
  Combat should eventually involve reading enemies rather than simply selecting the strongest attack.
 
  Example:
 
- ### Goblin
+ ## Goblin
 
  The goblin crouches and protects its upper body.
 
  The player may infer that a LOW attack is advantageous.
 
- ### Iron Golem
+ ## Iron Golem
 
  The golem exposes a vulnerable leg.
 
@@ -718,19 +1020,19 @@ LEFT → RIGHT → HIGH
 
  The eventual goal is:
 
- > Observe → Choose sequence → Execute technique → React
+ > **Observe → Choose sequence → Execute technique → React**
 
  rather than:
 
- > Select strongest attack repeatedly.
+ > **Select strongest attack repeatedly.**
 
 ---
 
- # 24\. First Combat Enemies
+ # 30\. First Combat Enemies
 
  The prototype only needs three important enemy types.
 
- ### Forest Goblin
+ ## Forest Goblin
 
  Purpose:
 
@@ -738,7 +1040,7 @@ LEFT → RIGHT → HIGH
 - Provide the Iron Key
 - Teach basic attack linking
 
- ### Iron Beetle
+ ## Iron Beetle
 
  Purpose:
 
@@ -746,7 +1048,7 @@ LEFT → RIGHT → HIGH
 - Encourage experimentation
 - Demonstrate attack effectiveness
 
- ### Ancient Guardian
+ ## Ancient Guardian
 
  Purpose:
 
@@ -756,7 +1058,7 @@ LEFT → RIGHT → HIGH
 
 ---
 
- # 25\. Magic and Staffs
+ # 31\. Magic and Staffs
 
  Staffs can use the same fundamental linking philosophy.
 
@@ -794,7 +1096,7 @@ FIRE → WIND → FIRE
 
 ---
 
- # 26\. Equipment Philosophy
+ # 32\. Equipment Philosophy
 
  Equipment should ideally provide more than simple numerical upgrades.
 
@@ -810,31 +1112,31 @@ FIRE → WIND → FIRE
 
  ## Goblin Cleaver
 
- Attack:
+```
+Attack:
+12
 
- > 12
-
- Techniques:
-
- - LOW → LOW
-- LOW → HIGH → LOW
+Techniques:
+LOW → LOW
+LOW → HIGH → LOW
+```
 
  ## Rusted Mage Staff
 
- Magic Power:
+```
+Magic Power:
+9
 
- > 9
-
- Spells:
-
- - FIRE → FIRE
-- WIND → FIRE
+Spells:
+FIRE → FIRE
+WIND → FIRE
+```
 
  This creates a reason to experiment with equipment rather than simply equipping the item with the largest number.
 
 ---
 
- # 27\. Shop
+ # 33\. Shop
 
  The shop is the player's persistent home base.
 
@@ -871,7 +1173,7 @@ Keep:
 Iron Sword
 ```
 
- And use:
+ And potentially use:
 
  > Ancient Relic
 
@@ -879,7 +1181,7 @@ Iron Sword
 
 ---
 
- # 28\. Customer Requests
+ # 34\. Customer Requests
 
  Customers can provide reasons to seek particular items.
 
@@ -905,32 +1207,35 @@ Iron Sword
 
 ---
 
- # 29\. Shop Progression
+ # 35\. Shop Progression
 
  For the first prototype, only a few upgrades are necessary.
 
- ### Larger Storage
+ ## Larger Storage
 
  Allows the player to retain more items.
 
- ### Better Counter
+ ## Better Counter
 
  Attracts better customers.
 
- ### Expedition Desk
+ ## Expedition Desk
 
  Provides additional information before adventures.
 
  For example:
 
- > Expedition Desk Level 2\
->  Reveals one guaranteed major event associated with the selected keywords.
+```
+Expedition Desk Level 2
+
+Reveals one guaranteed major event associated with the selected keywords.
+```
 
  This makes the shop directly connected to adventure preparation.
 
 ---
 
- # 30\. Expedition Archive
+ # 36\. Expedition Archive
 
  Every completed adventure is archived.
 
@@ -977,15 +1282,17 @@ Escaped successfully
 
  It also provides the shareable:
 
- > Keywords + Seed
+ > **Keywords + Seed**
 
  combination.
 
+ The archive should eventually retain enough generation metadata to reproduce the underlying adventure when appropriate.
+
 ---
 
- # 31\. Core Architecture
+ # 37\. Core Architecture
 
- The game is separated into several conceptual layers.
+ The game should be separated into several conceptual layers.
 
 ```
 ┌─────────────────────────────┐
@@ -1023,9 +1330,18 @@ Escaped successfully
 └─────────────────────────────┘
 ```
 
+ The architecture should maintain a strong separation between:
+
+```
+AUTHORED CONTENT
+GENERATED ADVENTURE
+RUNTIME ADVENTURE STATE
+PERSISTENT PLAYER STATE
+```
+
 ---
 
- # 32\. Unity Data
+ # 38\. Unity Data
 
  Unity ScriptableObjects are a strong candidate for authored game data.
 
@@ -1042,7 +1358,7 @@ EventDefinition
 CustomerDefinition
 ```
 
- Definitions describe what content IS.
+ Definitions describe what content **IS**.
 
  Runtime objects describe what is happening during a specific adventure.
 
@@ -1050,9 +1366,9 @@ CustomerDefinition
 
 ---
 
- # 33\. Runtime State
+ # 39\. Runtime State
 
- Runtime state belongs to the current game/session.
+ Runtime state belongs to the current game/session or current adventure.
 
  Examples:
 
@@ -1068,6 +1384,7 @@ Obtained Items
 Defeated Enemies
 Current Combat
 Current Adventure Seed
+Current Adventure
 ```
 
  Persistent state belongs to the player's overall game.
@@ -1088,11 +1405,268 @@ Unlocked Content
 
 ---
 
- # 34\. Conditions and Effects
+ # 40\. Proposed Adventure Data Model
 
- The event system should eventually support generalized conditions and effects.
+ The next development stage is to formally design the following objects:
 
- Examples of conditions:
+```
+Adventure
+AdventurePlan
+AdventureSeed
+KeywordDefinition
+
+Node
+NodeInstance
+
+EventDefinition
+EventInstance
+
+DungeonState
+
+EventCondition
+EventEffect
+
+AdventureContract
+Dependency
+
+PlayerRuntimeState
+AdventureResult
+```
+
+ These objects must be designed before substantial Unity implementation begins.
+
+---
+
+ # 41\. Adventure
+
+ Conceptually, `Adventure` represents a specific generated expedition.
+
+ It is the container tying together:
+
+ - Generation identity
+- Keywords
+- Seed
+- Generated adventure structure
+- Node instances
+- Event instances
+- Dungeon state
+- Runtime progression
+- Adventure result
+
+ An Adventure should represent one generated run, not the permanent player profile.
+
+ The exact distinction between generated adventure data and mutable runtime state must be finalized during the data-model stage.
+
+---
+
+ # 42\. AdventureSeed
+
+ `AdventureSeed` represents the deterministic generation seed.
+
+ It should be treated as generation input rather than gameplay state.
+
+ The seed should eventually work together with:
+
+```
+Keywords
+Generator Version
+Generation Attempt
+```
+
+ to reproduce the same underlying adventure.
+
+ The implementation should avoid relying on uncontrolled global random state.
+
+---
+
+ # 43\. KeywordDefinition
+
+ A `KeywordDefinition` represents authored keyword content.
+
+ Example:
+
+```
+Forest
+Ruins
+Iron
+```
+
+ A keyword may eventually influence:
+
+ - Biomes
+- Event selection
+- Enemy selection
+- Item selection
+- Locations
+- Story themes
+- Event chains
+- Bosses
+- Rewards
+- Generation weights
+- Contracts
+
+ Keyword definitions are authored content and are therefore strong candidates for ScriptableObjects.
+
+---
+
+ # 44\. Node
+
+ A Node represents the conceptual structure or definition of an adventure location.
+
+ The exact distinction between authored node templates and generated node instances will be finalized during the data-model design.
+
+ A node may contain or reference:
+
+ - Node type
+- Event information
+- Connections
+- Generation metadata
+- Requirements
+- Optional/required status
+
+ The node itself should not contain mutable per-run state if that state belongs to a specific adventure.
+
+---
+
+ # 45\. NodeInstance
+
+ A `NodeInstance` represents an actual generated node inside one adventure.
+
+ It may contain:
+
+```
+Node ID
+Generated position
+Connections
+EventInstance
+Visited state
+Resolved state
+Availability state
+Generation metadata
+```
+
+ It belongs to one generated Adventure.
+
+ It may reference an EventInstance.
+
+---
+
+ # 46\. EventDefinition
+
+ An `EventDefinition` is authored content.
+
+ Examples:
+
+```
+Goblin Camp
+Iron Door
+Ancient Guardian
+Forest Shrine
+Treasure Chest
+```
+
+ It should describe:
+
+ - What the event is
+- Available choices
+- Conditions
+- Effects
+- Content references
+- Event type
+- Possible outcomes
+- Generation tags
+- Requirements
+- Contracts it can satisfy
+- Other authored configuration
+
+ It should not contain:
+
+ - Whether the event has already been visited
+- Whether the player already resolved it
+- Runtime choices made by the player
+- Per-adventure generated values
+- Mutable dungeon state
+
+ An EventDefinition should be reusable across many adventures.
+
+---
+
+ # 47\. EventInstance
+
+ An `EventInstance` represents a generated occurrence of an EventDefinition.
+
+ It belongs to a particular Adventure.
+
+ It may contain:
+
+```
+Event Instance ID
+Reference to EventDefinition
+Generated parameters
+Generated enemies
+Generated loot
+Generated choices where applicable
+Runtime resolution state
+Visited state
+Resolved state
+```
+
+ It should not duplicate the entire authored definition unnecessarily.
+
+ The EventInstance should use the EventDefinition as its content template while storing only the generated/runtime information necessary for that specific occurrence.
+
+---
+
+ # 48\. DungeonState
+
+ `DungeonState` represents mutable state belonging to the current adventure.
+
+ It may contain:
+
+```
+Flags
+Obtained adventure items
+Opened doors
+Activated machines
+Rescued NPCs
+Defeated bosses
+Completed events
+Unlocked areas
+Other state variables
+```
+
+ The exact implementation should support generalized conditions and effects.
+
+ The state system should avoid requiring every possible future flag to become a new hardcoded field.
+
+ A generalized state model should therefore be considered.
+
+ For example:
+
+```
+Flag:
+ironDoorOpened = true
+```
+
+ rather than requiring:
+
+```
+bool ironDoorOpened;
+bool machineActivated;
+bool shrineDestroyed;
+bool goblinCampCleared;
+...
+```
+
+ for every possible future event.
+
+---
+
+ # 49\. EventCondition
+
+ `EventCondition` represents a requirement that must be satisfied before a choice or event outcome is available.
+
+ Examples:
 
 ```
 PlayerHasItem("iron_key")
@@ -1106,7 +1680,25 @@ PlayerLevelAtLeast(5)
 HasWeaponType("staff")
 ```
 
- Examples of effects:
+ Conditions should be composable where appropriate.
+
+ Future support may include:
+
+```
+AND
+OR
+NOT
+```
+
+ The exact implementation should be designed around extensibility.
+
+---
+
+ # 50\. EventEffect
+
+ `EventEffect` represents a state-changing action.
+
+ Examples:
 
 ```
 GiveItem("iron_key")
@@ -1128,1761 +1720,432 @@ UnlockNode(...)
 StartCombat(...)
 ```
 
- This system should be extensible.
+ Effects should modify state through systems rather than directly manipulating unrelated objects.
 
----
-
- # 35\. Critical Design Principle
-
- Events should communicate through shared state and systems rather than direct references whenever possible.
-
- Avoid:
-
- > GoblinEvent directly opens IronDoorEvent.
-
- Prefer:
-
- > GoblinEvent gives Iron Key.
-
- Then:
-
- > IronDoorEvent checks whether the player has Iron Key.
-
- This makes events reusable and dramatically increases procedural flexibility.
-
----
-
- # 36\. What Is Finished
-
- The **vertical slice design is complete enough to begin architecture work**.
-
- We have defined what the first playable prototype needs to prove:
+ For example:
 
 ```
-Shop
- ↓
-3 Keywords
- ↓
-Seed
- ↓
-Adventure Generation
- ↓
-Adventure Validation
- ↓
-Node Map
- ↓
+Iron Door Event
+      ↓
+Remove Item: Iron Key
+      ↓
+Set Flag: ironDoorOpened
+      ↓
 Dungeon State
- ↓
-Goblin
- ↓
-Iron Key
- ↓
+```
+
+ Another event can then react to that state.
+
+---
+
+ # 51\. AdventureContract
+
+ An `AdventureContract` represents an intended requirement or guarantee that the generated adventure should satisfy.
+
+ Examples:
+
+```
+Iron Door must be openable
+Iron Key must have a reachable source
+Boss must be reachable
+Exit must be reachable
+Required quest item must be obtainable
+```
+
+ Contracts are primarily generator/validation concerns.
+
+ They should not be confused with ordinary gameplay conditions.
+
+ A gameplay condition answers:
+
+ > Can the player perform this action right now?
+
+ A generation contract answers:
+
+ > Is this adventure validly constructed?
+
+---
+
+ # 52\. Dependency
+
+ A `Dependency` describes a relationship in which one piece of content depends on another condition, state, resource, or objective.
+
+ Example:
+
+```
 Iron Door
- ↓
-State-Reactive Event
- ↓
-Attack-Linking Combat
- ↓
-Boss
- ↓
-Loot
- ↓
-Return to Shop
- ↓
-Customer
- ↓
+    requires
+Iron Key
+```
+
+ or:
+
+```
+Ancient Guardian
+    requires
+ironDoorOpened == true
+```
+
+ Dependencies are particularly important to procedural generation.
+
+ The generator must use them to ensure that generated content can form a solvable progression.
+
+ The validator must inspect them for impossible cycles and inaccessible prerequisites.
+
+---
+
+ # 53\. PlayerRuntimeState
+
+ `PlayerRuntimeState` represents the player's mutable state during an active adventure.
+
+ Examples:
+
+```
+Health
+Inventory
+Equipment
+Current Node
+Combat State
+Temporary Effects
+Adventure Items
+Player Decisions
+```
+
+ This is distinct from persistent player state.
+
+ The player's permanent shop/profile data should not be mixed into the active adventure state.
+
+ For example:
+
+```
+Adventure Runtime:
+Current Health
+Current Inventory
+Current Equipment
+Dungeon State
+
+Persistent Player:
+Gold
+Shop Level
+Reputation
+Stored Items
 Archive
 ```
 
- The vertical slice has NOT yet been implemented.
-
- We have now moved from:
-
- > Game Design
-
- into:
-
- > Architecture & Data Design
+ The exact save architecture will be designed later.
 
 ---
 
- # 37\. Development Roadmap
+ # 54\. AdventureResult
 
- The current development roadmap is:
+ `AdventureResult` represents the finalized outcome of an expedition.
+
+ It may contain:
 
 ```
-1. Game Design
-        ↓
-2. Vertical Slice Design          ← COMPLETE
-        ↓
-3. Data Model                     ← COMPLETE CONCEPTUALLY
-        ↓
-4. Event / State Architecture     ← COMPLETE CONCEPTUALLY
-        ↓
-5. Procedural Generation
-        ↓
-6. Combat Architecture            ← COMPLETE CONCEPTUALLY
-        ↓
-7. Unity Project Architecture     ← COMPLETE CONCEPTUALLY
-        ↓
-8. Implement Vertical Slice       ← NEXT MAJOR PHASE
-        ↓
-9. Playtest
-        ↓
-10. Adjust Design
-        ↓
-11. Expand Game
+Victory / Defeat
+Cause of Ending
+Time
+Enemies Defeated
+Items Found
+Gold Earned
+Secrets Discovered
+Techniques Discovered
+Spells Discovered
+Nodes Visited
+Objectives Completed
+Keywords
+Seed
+Generator Version
 ```
 
- The next implementation work will begin with the foundational C# data model.
+ The result should be suitable for:
+
+ - Returning rewards to the shop
+- Creating an archive entry
+- Displaying statistics
+- Supporting future sharing/reproduction systems
 
 ---
 
- # 38\. Adventure Data Model
+ # 55\. Authored vs Generated vs Runtime vs Persistent
 
- Before implementing the generator, the following conceptual entities have been identified:
+ This distinction is critical.
+
+ ## Authored Data
+
+ Created by the developer.
+
+ Examples:
 
 ```
-Adventure
-AdventurePlan
-AdventureSeed
 KeywordDefinition
-Node
-NodeInstance
 EventDefinition
-EventInstance
-DungeonState
-EventCondition
-EventEffect
-AdventureContract
-Dependency
-PlayerRuntimeState
-AdventureResult
-```
-
- The architecture must clearly distinguish:
-
- - Authored data
-- Generated data
-- Runtime state
-- Persistent player state
-
- The generator should produce runtime/generated objects from authored definitions.
-
----
-
- # 39\. Definition vs Instance Architecture
-
- This is a fundamental pattern throughout the project.
-
-```
-AUTHORED DEFINITION
-        ↓
-PROCEDURAL GENERATION
-        ↓
-RUNTIME INSTANCE
-```
-
- Examples:
-
-```
-EventDefinition
-      ↓
-EventInstance
-
-NodeDefinition
-      ↓
-NodeInstance
-
-EnemyDefinition
-      ↓
-EnemyInstance
-
-WeaponDefinition
-      ↓
-WeaponRuntimeData
-```
-
- Definitions describe reusable content.
-
- Instances describe what actually exists in the current adventure.
-
----
-
- # 40\. Deterministic Generation Architecture
-
- The generated adventure must be reproducible.
-
- Conceptually:
-
-```
-AdventureSeed
-+
-Selected Keywords
-+
-GenerationVersion
-        ↓
-AdventureGenerator
-        ↓
-AdventurePlan
-        ↓
-Generated Adventure
-```
-
- The same inputs should produce the same underlying adventure structure.
-
- Runtime decisions do not alter the original generated structure.
-
- They alter the runtime state.
-
----
-
- # 41\. Generation Version
-
- Generated adventures must account for changes to the generation algorithm.
-
- A saved or shared adventure should therefore conceptually contain:
-
-```
-Seed
-Keywords
-GenerationVersion
-```
-
- For example:
-
-```
-Seed:
-58392014
-
-Keywords:
-Forest / Ruins / Iron
-
-GenerationVersion:
-1
-```
-
- This prevents future generator changes from silently changing the meaning of old seeds.
-
----
-
- # 42\. Generated Adventure Saving
-
- Because the adventure is deterministic, we should not necessarily save the complete generated graph.
-
- A future save can potentially store:
-
-```
-AdventureSaveData
-
-Seed
-Keywords
-GenerationVersion
-RuntimeState
-```
-
- Then:
-
-```
-Seed + Keywords + GenerationVersion
-        ↓
-Regenerate Adventure
-        ↓
-Apply RuntimeState
-```
-
- This approach reduces save data and reinforces the deterministic architecture.
-
- Mid-adventure saving is not required for the first prototype unless later development determines that it is necessary.
-
----
-
- # 43\. Combat Architecture
-
- Combat is its own subsystem.
-
- The main relationship is:
-
-```
-Adventure Event
-      ↓
-StartCombat
-      ↓
-Combat System
-      ↓
-Combat Runtime
-      ↓
-Combat Result
-      ↓
-Adventure Runtime
-      ↓
-Apply Result
-```
-
- An event requests combat.
-
- The combat system handles combat.
-
- The result returns to the event/adventure system.
-
----
-
- # 44\. CombatDefinition vs CombatInstance
-
- A `CombatDefinition` describes an authored encounter.
-
- A `CombatInstance` is the actual fight occurring during an adventure.
-
- Example:
-
-```
-CombatDefinition:
-Forest Goblin Encounter
-
-CombatInstance:
-Adventure 58392014
-Node 7
-Two Forest Goblins
-Current player state
-```
-
- The combat instance contains mutable state.
-
----
-
- # 45\. Combat Runtime State
-
- The active fight contains:
-
-```
-CombatRuntimeState
-├── Player Combatant
-├── Enemy Combatants
-├── Turn / Phase
-├── Current Input Sequence
-├── Combat Log
-├── Status Effects
-├── Combat Result
-└── RNG State
-```
-
- This state exists only while combat is active.
-
----
-
- # 46\. Combatant
-
- A combatant is an entity participating in combat.
-
- Initially:
-
-```
-Player
-Enemy
-```
-
- The architecture should allow future combatants such as:
-
-```
-Summon
-Companion
-NPC
-Boss
-```
-
- without requiring a new combat system.
-
----
-
- # 47\. EnemyDefinition and EnemyInstance
-
- An `EnemyDefinition` is authored content.
-
- It contains things such as:
-
-```
-Name
-Base Stats
-Tags
-Attack Patterns
-Resistances
-Weaknesses
-Loot Table
-Behavior Definition
-```
-
- It does NOT contain:
-
-```
-Current HP
-Current Status
-Currently Dead
-Current Combat
-```
-
- Those belong to the runtime instance.
-
----
-
- # 48\. WeaponDefinition
-
- Weapons are authored content.
-
- Example:
-
-```
-Iron Sword
-```
-
- It can define:
-
-```
-Base Power
-Combat Vocabulary
-Techniques
-Special Properties
-Tags
-```
-
- Mutable information such as durability, upgrades, ownership, or equipment state belongs to runtime data.
-
----
-
- # 49\. Combat Vocabulary
-
- A weapon defines which inputs it understands.
-
- Sword:
-
-```
-HIGH
-LOW
-LEFT
-RIGHT
-```
-
- Staff:
-
-```
-FIRE
-WIND
-EARTH
-WATER
-```
-
- This allows the same sequence system to support multiple combat styles.
-
----
-
- # 50\. Attack Sequence
-
- An attack sequence is an ordered collection of combat inputs.
-
- Example:
-
-```
-LOW → LOW → HIGH
-```
-
- The sequence is passed to the technique matching system.
-
----
-
- # 51\. TechniqueDefinition
-
- A technique is authored content.
-
- Example:
-
-```
-Technique:
-Iron Fang
-
-Sequence:
-LOW LOW HIGH
-
-Power:
-25
-
-Effects:
-Armor Break
-```
-
- The technique does not contain runtime combat state.
-
----
-
- # 52\. Technique Matching
-
- The combat system receives:
-
-```
-Weapon
-+
-Input Sequence
-```
-
- and asks the technique matcher whether a known technique exists.
-
- Example:
-
-```
-Iron Sword
-+
-LOW LOW HIGH
-        ↓
-Iron Fang
-```
-
- If no technique matches:
-
-```
-Improvised Combination
-```
-
- is produced.
-
----
-
- # 53\. Technique Discovery
-
- The game may know about a technique even when the player does not.
-
- For example:
-
-```
-LOW LOW HIGH
-→ Iron Fang
-```
-
- The player's persistent progression can record:
-
-```
-Discovered Techniques:
-Iron Fang
-```
-
- The discovery state belongs to the player.
-
- The technique definition remains static authored content.
-
----
-
- # 54\. Combat Result
-
- Combat returns a result rather than directly modifying arbitrary dungeon state.
-
- Example:
-
-```
-CombatResult
-
-Outcome:
-Victory
-
-EnemiesDefeated:
-Forest Goblin
-
-DamageTaken:
-12
-
-TechniquesUsed:
-Iron Fang
-
-Loot:
-Iron Key
-
-Experience:
-15
-```
-
- The event that initiated combat can then interpret the result.
-
- For example:
-
-```
-Combat Victory
-        ↓
-Give Iron Key
-        ↓
-Set goblinCampCleared
-        ↓
-Resolve Event
-```
-
----
-
- # 55\. Combat Randomness
-
- Combat can contain runtime randomness.
-
- Examples:
-
- - Damage variation
-- Enemy decisions
-- Critical hits
-- Status chances
-- Loot rolls
-
- This should use controlled RNG rather than arbitrary global random calls.
-
- Conceptually:
-
-```
-Adventure Seed
-      ↓
-Combat Seed
-      ↓
-Combat RNG
-```
-
- The generated adventure and runtime combat randomness remain conceptually separate.
-
----
-
- # 56\. Unity Project Architecture
-
- The recommended Unity project structure is:
-
-```
-Assets/
-└── _Game/
-    ├── Core/
-    ├── Data/
-    ├── Adventure/
-    ├── Generation/
-    ├── Events/
-    ├── Combat/
-    ├── Player/
-    ├── Shop/
-    ├── Archive/
-    ├── Save/
-    ├── UI/
-    ├── Scenes/
-    ├── Prefabs/
-    ├── Art/
-    └── Audio/
-```
-
- This structure may evolve, but it provides a clean starting point.
-
----
-
- # 57\. Core Folder
-
- `Core` contains shared foundational systems.
-
- Potential areas:
-
-```
-Core/
-├── GameFlow/
-├── IDs/
-├── Random/
-├── Logging/
-├── Utilities/
-└── Services/
-```
-
- Potential classes:
-
-```
-GameManager
-GameSession
-GameState
-GameFlowController
-SeededRandom
-GameID
-```
-
- `Core` should remain intentionally small.
-
----
-
- # 58\. Data Folder
-
- `Data` contains authored ScriptableObject content.
-
-```
-Data/
-├── Items/
-├── Weapons/
-├── Enemies/
-├── Techniques/
-├── Spells/
-├── Events/
-├── Keywords/
-├── Customers/
-└── Encounters/
-```
-
- Examples:
-
-```
 ItemDefinition
 WeaponDefinition
 EnemyDefinition
 TechniqueDefinition
 SpellDefinition
-EventDefinition
-KeywordDefinition
 CustomerDefinition
 ```
 
----
-
- # 59\. ScriptableObject Rule
-
- The following rule is now established:
-
- > **ScriptableObjects describe authored content; they do not contain mutable state belonging to a particular game session.**
-
- For example:
-
-```
-IronSword.asset
-```
-
- can contain:
-
-```
-Attack Power
-Vocabulary
-Techniques
-```
-
- but should not contain:
-
-```
-Current Durability
-Current Owner
-Currently Equipped
-```
+ Likely Unity ScriptableObjects.
 
 ---
 
- # 60\. Adventure Folder
+ ## Generated Data
 
- The `Adventure` folder contains runtime expedition structures.
+ Created by the deterministic adventure generator.
 
- Potential classes:
+ Examples:
 
 ```
-Adventure
-AdventureRuntime
-AdventureState
-NodeInstance
-EventInstance
+AdventurePlan
+Generated NodeInstances
+Generated EventInstances
+Generated Connections
+Generated Loot
+Generated Enemy Selection
+Generated Contracts
+Generation Metadata
+```
+
+ Generated from seed + keywords.
+
+---
+
+ ## Runtime Data
+
+ Changes while the player is playing.
+
+ Examples:
+
+```
 DungeonState
 PlayerRuntimeState
-AdventureResult
+Visited Nodes
+Resolved Events
+Current Health
+Current Inventory
+Current Node
+Combat State
 ```
 
- The adventure system owns the current expedition.
+ Mutable during the adventure.
 
 ---
 
- # 61\. Generation Folder
+ ## Persistent Player Data
 
- Procedural generation should be isolated.
+ Survives between adventures.
 
-```
-Generation/
-├── AdventureGenerator.cs
-├── GenerationContext.cs
-├── AdventurePlanner.cs
-├── ContractResolver.cs
-├── DependencyResolver.cs
-├── GraphGenerator.cs
-├── EventPlacer.cs
-├── AdventureValidator.cs
-├── GenerationResult.cs
-└── Random/
-```
-
- The generator should take:
+ Examples:
 
 ```
-Seed
-+
-Keywords
+Shop Level
+Gold
+Reputation
+Stored Items
+Unlocked Content
+Customers
+Expedition Archive
 ```
 
- and produce:
-
-```
-Adventure
-```
-
- without depending on UI.
+ Stored in the player's save data.
 
 ---
 
- # 62\. Events Folder
+ # 56\. Critical Architectural Principle
 
- The event system gets its own subsystem.
+ Events should communicate through shared state and systems rather than direct references whenever possible.
+
+ Avoid:
 
 ```
-Events/
-├── Runtime/
-├── Conditions/
-├── Effects/
-├── Choices/
-└── EventResolver.cs
+GoblinEvent directly opens IronDoorEvent
 ```
 
- Potential components include:
+ Prefer:
+
+```
+GoblinEvent
+    ↓
+Give Iron Key
+    ↓
+Shared State
+    ↓
+IronDoorEvent checks for Iron Key
+```
+
+ This makes events reusable and dramatically increases procedural flexibility.
+
+---
+
+ # 57\. Runtime Event Resolution
+
+ The intended conceptual flow for an event is:
 
 ```
 EventInstance
-EventRuntimeState
-EventChoice
-EventResolver
-EventCondition
-EventEffect
+      ↓
+Read EventDefinition
+      ↓
+Evaluate Conditions
+      ↓
+Present Available Choices
+      ↓
+Player Selects Choice
+      ↓
+Resolve Effects
+      ↓
+Modify Runtime State
+      ↓
+Update EventInstance / NodeInstance
+      ↓
+Return to Adventure Map
 ```
 
- Specific effects can include:
+ The event system should not directly own the entire game state.
 
-```
-GiveItemEffect
-RemoveItemEffect
-SetFlagEffect
-StartCombatEffect
-GiveGoldEffect
-UnlockNodeEffect
-```
+ It should interact with appropriate runtime systems.
 
 ---
 
- # 63\. Combat Folder
+ # 58\. Data Ownership Principle
 
- Combat gets its own subsystem.
+ A useful rule for the architecture is:
 
-```
-Combat/
-├── Runtime/
-├── Actions/
-├── Techniques/
-├── AI/
-├── Damage/
-└── Resolution/
-```
+ > **Definitions describe what something is. Instances describe a generated occurrence. Runtime state describes what is currently happening. Persistent data describes what survives the adventure.**
 
- Potential classes:
-
-```
-CombatInstance
-CombatRuntimeState
-Combatant
-CombatAction
-AttackSequence
-TechniqueMatcher
-CombatResolver
-EnemyAI
-CombatResult
-```
-
- The combat UI does not own these rules.
+ This distinction should be maintained throughout implementation.
 
 ---
 
- # 64\. Player Folder
+ # 59\. Serialization and Saving Philosophy
 
- Player data must be divided into persistent and temporary state.
+ Not everything needs to be permanently saved.
 
- Persistent state:
+ The architecture should distinguish between:
 
-```
-Gold
-Shop Reputation
-Stored Items
-Discovered Techniques
-Unlocked Content
-Shop Upgrades
-Archive
-```
+ ## Reconstructable Data
 
- Adventure runtime state:
+ Data that can be recreated from:
 
 ```
-Current HP
-Temporary Effects
-Adventure Inventory
-Current Equipment
-```
-
- These should remain conceptually separate.
-
----
-
- # 65\. Shop Folder
-
- The shop is its own gameplay system.
-
-```
-Shop/
-├── ShopState.cs
-├── ShopManager.cs
-├── Customers/
-├── Storage/
-├── Upgrades/
-└── Transactions/
-```
-
- The shop consumes adventure results but should not directly control adventure generation.
-
----
-
- # 66\. Archive Folder
-
- The archive stores completed expedition records.
-
-```
-Archive/
-├── ExpeditionRecord.cs
-├── ArchiveManager.cs
-└── ArchiveFormatter.cs
-```
-
- An archived expedition might contain:
-
-```
-Expedition ID
 Seed
 Keywords
-Generation Version
-Result
-Time
-Enemies
-Items
-Gold
-Secrets
-Techniques
+Generator Version
+Generation Attempt
+Authored Content
 ```
 
- The archive stores a record of an adventure, not the live adventure object.
+ Examples may include:
+
+ - Generated node structure
+- Generated event placement
+- Generated connections
+- Generated content selection
 
 ---
 
- # 67\. Save Folder
+ ## Runtime State
 
- Saving should be handled by a dedicated subsystem.
-
-```
-Save/
-├── SaveManager.cs
-├── SaveData.cs
-├── SaveSerializer.cs
-└── SaveVersion.cs
-```
-
- Gameplay systems should not each invent their own save format.
-
- The general architecture is:
-
-```
-Game State
-    ↓
-SaveData
-    ↓
-Serializer
-    ↓
-Save File
-```
-
----
-
- # 68\. What Gets Saved?
-
- Persistent player state should be saved.
+ Data that cannot simply be reconstructed from the seed because it depends on player decisions.
 
  Examples:
 
 ```
-Gold
-Shop
-Stored Inventory
-Reputation
-Discovered Techniques
-Unlocked Content
-Archive
-```
-
- Mid-adventure saving is not required for the first prototype unless development later determines that it is necessary.
-
- If it is eventually implemented, the active adventure can use:
-
-```
-Seed
-Keywords
-GenerationVersion
-RuntimeState
-```
-
- to reconstruct the adventure.
-
----
-
- # 69\. GameSession
-
- The project should have a high-level runtime session.
-
- Conceptually:
-
-```
-GameSession
-├── PersistentPlayerState
-├── CurrentAdventure
-└── CurrentCombat
-```
-
- The session represents the current running game.
-
- It should not become a giant class containing all game logic.
-
----
-
- # 70\. Game Flow
-
- The major game flow can be represented as a state machine:
-
-```
-MainMenu
-   ↓
-Shop
-   ↓
-AdventurePreparation
-   ↓
-AdventureGeneration
-   ↓
-Adventure
-   ↓
-Combat / Event
-   ↓
-Adventure
-   ↓
-AdventureComplete
-   ↓
-Shop
-```
-
- Future states may include:
-
-```
-Archive
-Customer
+Opened Door
+Obtained Key
+Defeated Enemy
+Visited Node
+Completed Event
+Dungeon Flags
+Current Health
 Inventory
-Settings
 ```
+
+ This state must be stored if an adventure can be saved/resumed.
 
 ---
 
- # 71\. GameFlowController
+ ## Persistent Data
 
- A `GameFlowController` coordinates major game states.
-
- It answers:
-
- > What major part of the game are we currently in?
-
- It does NOT answer questions such as:
-
- > How much damage does Iron Fang deal?
-
- That belongs to combat.
-
----
-
- # 72\. Scene Strategy
-
- For the first prototype, use one primary gameplay scene.
-
- Example:
-
-```
-Scenes/
-└── Main.unity
-```
-
- Conceptually:
-
-```
-Main Scene
-├── GameSystems
-├── Canvas
-│   ├── ShopView
-│   ├── AdventureView
-│   ├── EventView
-│   ├── CombatView
-│   └── ArchiveView
-└── Audio
-```
-
- This keeps the prototype simple.
-
- Scenes can be split later if there is a clear reason.
-
----
-
- # 73\. MonoBehaviour Usage
-
- `MonoBehaviour` should primarily be used for objects that participate directly in the Unity scene.
+ Data belonging to the player's long-term profile.
 
  Examples:
 
 ```
-GameBootstrapper
-UIController
-MapView
-CombatView
-ShopView
-AudioController
+Gold
+Shop Level
+Reputation
+Stored Items
+Archive
+Unlocked Content
 ```
 
- Pure game logic should generally remain ordinary C#.
-
- Examples:
-
-```
-AdventureGenerator
-AdventureValidator
-TechniqueMatcher
-ConditionEvaluator
-CombatResolver
-```
-
- This makes core logic easier to test.
+ The exact save format will be determined later.
 
 ---
 
- # 74\. UI Architecture
+ # 60\. Reproducibility Principle
 
- The UI should display and interact with game state rather than own game state.
+ The goal is not necessarily to serialize every generated object permanently.
 
- For example:
-
-```
-AdventureRuntime
-       ↓
-AdventureView
-```
-
- When the player clicks a node, the UI sends a command such as:
-
-```
-SelectNode(nodeID)
-```
-
- The adventure system validates and processes the command.
-
- The UI then reflects the resulting state.
-
----
-
- # 75\. Command-Based Interaction
-
- Player interactions can be represented as commands.
-
- Examples:
-
-```
-SelectNodeCommand
-ChooseEventOptionCommand
-SubmitAttackSequenceCommand
-SellItemCommand
-EquipItemCommand
-```
-
- The UI creates the command.
-
- The appropriate game system validates and executes it.
-
- This keeps game rules independent of UI callbacks.
-
----
-
- # 76\. Example: Iron Door Interaction
-
- The player clicks:
-
- > Use Iron Key
-
- The UI sends something conceptually equivalent to:
-
-```
-ChooseEventOption(
-    EventInstanceID,
-    ChoiceID
-)
-```
-
- The event system:
-
-```
-Validate conditions
-      ↓
-Execute effects
-      ↓
-Update state
-      ↓
-Return result
-```
-
- The UI then updates.
-
- The button itself contains no Iron Door logic.
-
----
-
- # 77\. Dependency Direction
-
- Lower-level systems should not depend on higher-level presentation systems.
-
- For example:
-
-```
-AdventureGenerator
-```
-
- should not reference:
-
-```
-UnityEngine.UI
-```
-
- The generator generates.
-
- The UI displays.
-
----
-
- # 78\. Assembly Definitions
-
- As the project grows, Assembly Definition files can establish boundaries such as:
-
-```
-Game.Core
-Game.Data
-Game.Adventure
-Game.Generation
-Game.Events
-Game.Combat
-Game.Shop
-Game.Archive
-Game.Save
-Game.UI
-```
-
- The exact assembly breakdown can be implemented once the first code structure is established.
-
- We should avoid creating excessive assembly complexity before it provides value.
-
----
-
- # 79\. What We Should NOT Build Yet
-
- The first prototype does not need:
-
- - Networking
-- Multiplayer synchronization
-- ECS
-- Addressables
-- Complex dependency injection frameworks
-- Large save databases
-- Mod support
-- Visual scripting
-- Procedural 3D environments
-- Dozens of managers
-
- The architecture should be extensible without becoming unnecessarily complicated.
-
----
-
- # 80\. First Technical Milestone
-
- Before building the full UI, the first major technical test should be:
+ The ideal architecture should make it possible to reconstruct the underlying adventure from:
 
 ```
 Seed
 +
-Forest / Ruins / Iron
-        ↓
-AdventureGenerator
-        ↓
-Adventure
-        ↓
-AdventureValidator
-        ↓
-Debug / Console Output
+Keywords
++
+Generator Version
++
+Generation Attempt
 ```
 
- The generated adventure should be inspectable.
+ Then apply the player's runtime state on top.
 
- Example:
+ Conceptually:
 
 ```
-Adventure Generated
-
-Seed: 58392014
-Keywords: Forest / Ruins / Iron
-
-Nodes: 12
-
-Critical Path:
-Start
-→ Goblin Camp
-→ Iron Door
-→ Guardian
-→ Exit
-
-Dependencies:
-Iron Door → Iron Key
-Guardian → Iron Door Opened
-
-Validation:
-PASS
+Generation Inputs
+      ↓
+Deterministic Generator
+      ↓
+Same Adventure Structure
+      ↓
+Apply Runtime State
+      ↓
+Current Player Experience
 ```
 
- The generator is the riskiest technical system, so it should be proven before extensive UI work.
+ This allows the game to preserve the important distinction:
+
+ > **The adventure is deterministic. The playthrough is not.**
 
 ---
 
- # 81\. GitHub Development Workflow
+ # 61\. First Prototype Scope
 
- The project will be maintained in a GitHub repository throughout development.
+ The first implementation should remain intentionally small.
 
- Git should be treated as part of the development process rather than something added at the end.
-
- The purpose is to give us:
-
- - A history of architectural decisions
-- Safe rollback points
-- Experimental branches if needed
-- Clear milestones
-- A way to compare changes
-- Protection against losing working versions
-- A record of how the project evolved
-
----
-
- # 82\. Commit Strategy
-
- We should make relatively small, meaningful commits.
-
- Avoid one enormous commit such as:
-
- > "Added entire game."
-
- Prefer commits representing coherent milestones.
-
- Examples:
-
-```
-Initialize Unity project structure
-Add core game data models
-Add adventure runtime state
-Add event condition system
-Add event effect system
-Add deterministic seed system
-Add adventure graph generation
-Add adventure validation
-Add Iron Door prototype events
-Add basic combat runtime
-Add technique matching
-Add shop prototype
-Add expedition archive
-```
-
- The exact commit messages can be adjusted as development progresses.
-
----
-
- # 83\. Commit After Stable Milestones
-
- A good rule for our collaboration is:
-
- > **When we finish a logically complete and working step, you make a Git commit.**
-
- For example:
-
-```
-Implement AdventureSeed
-        ↓
-Test
-        ↓
-Works
-        ↓
-COMMIT
-```
-
- Then:
-
-```
-Implement KeywordDefinition
-        ↓
-Test
-        ↓
-Works
-        ↓
-COMMIT
-```
-
- This gives us reliable checkpoints.
-
----
-
- # 84\. Avoid Committing Broken Intermediate States When Possible
-
- During experimentation, code may temporarily be broken.
-
- That is fine.
-
- We don't need to commit every tiny change.
-
- Instead:
-
-```
-Experiment
-   ↓
-Fix
-   ↓
-Test
-   ↓
-Stable
-   ↓
-Commit
-```
-
- This keeps the Git history useful.
-
----
-
- # 85\. Commit Messages
-
- We should use concise commit messages that explain what changed.
-
- A simple convention is:
-
-```
-Add ...
-Implement ...
-Fix ...
-Refactor ...
-Update ...
-Remove ...
-```
-
- Examples:
-
-```
-Add adventure seed model
-Implement deterministic keyword selection
-Add dungeon state runtime
-Implement event condition evaluation
-Fix dependency validation
-Add technique sequence matching
-```
-
----
-
- # 86\. Branching
-
- For the beginning of the project, we can keep things simple.
-
- The main branch can contain stable working versions.
-
- For larger experimental changes, we can eventually use branches such as:
-
-```
-main
-feature/adventure-generator
-feature/combat-system
-feature/shop-system
-```
-
- We do not need elaborate Git workflows yet.
-
----
-
- # 87\. GitHub and This Collaboration
-
- As we develop the game together, the working process should be:
-
-```
-Design / Architecture
-        ↓
-Small Implementation Step
-        ↓
-You Implement in Unity
-        ↓
-Test
-        ↓
-Report Results / Errors
-        ↓
-We Fix or Refine
-        ↓
-Stable Milestone
-        ↓
-Git Commit
-        ↓
-Next Step
-```
-
- If you paste relevant code or error messages into the conversation, we can work through them together.
-
- The repository becomes the persistent project history, while this document remains the high-level development context.
-
----
-
- # 88\. Important Git Principle
-
- Git commits should represent **known-good project states whenever practical**.
-
- This means that before committing a milestone, we should ideally know:
-
- - What was changed
-- Why it was changed
-- Whether it compiles
-- Whether the relevant tests/manual checks pass
-- What remains unfinished
-
- This will make debugging much easier later.
-
----
-
- # 89\. Current Development Status
-
- The project currently stands at:
-
-```
-Game Concept
-        ✓
-Vertical Slice Design
-        ✓
-Adventure Conceptual Data Model
-        ✓
-Event/State Architecture
-        ✓
-Combat Architecture
-        ✓
-Unity Project Architecture
-        ✓
-GitHub Development Workflow
-        ✓
-
-Concrete C# Implementation
-        ← CURRENT NEXT STEP
-```
-
- The next actual development task is to begin implementing the foundational data model.
-
----
-
- # 90\. Immediate Next Implementation
-
- We should begin with the smallest foundational structures.
-
- Recommended order:
-
-```
-1. GameID
-2. AdventureSeed
-3. KeywordDefinition
-4. AdventurePlan
-5. NodeDefinition
-6. NodeInstance
-7. EventDefinition
-8. EventInstance
-9. DungeonState
-10. PlayerRuntimeState
-11. Adventure
-12. AdventureResult
-```
-
- Then:
-
-```
-13. EventCondition
-14. EventEffect
-15. AdventureContract
-16. Dependency
-```
-
- Then:
-
-```
-17. AdventureGenerator
-18. AdventureValidator
-```
-
- Only after those foundations are stable should we build the full prototype UI.
-
----
-
- # 91\. Implementation Philosophy
-
- Do not attempt to implement the entire game in one pass.
-
- Each system should be introduced in a small, testable increment.
-
- For example:
-
-```
-Create AdventureSeed
-        ↓
-Test deterministic value
-        ↓
-Commit
-        ↓
-Create KeywordDefinition
-        ↓
-Test keyword data
-        ↓
-Commit
-        ↓
-Create AdventurePlan
-        ↓
-Test
-        ↓
-Commit
-```
-
- This minimizes the cost of architectural mistakes.
-
----
-
- # 92\. Architecture Goal
-
- The architecture should allow us to author content such as:
-
- > Goblin Camp
-
- once, while allowing the generator to create many different instances of that event.
-
- It should also allow events to interact through shared state without requiring them to know about each other directly.
-
- The ultimate goal is for the content system to make it possible to create complex adventures from relatively simple reusable building blocks.
-
----
-
- # 93\. Master Architectural Principle
-
- The most important principle going forward is:
-
- > **Separate what the game knows from what is happening right now.**
-
- Authored data says:
-
- > What is a Goblin Camp?
-
- Generated data says:
-
- > Where did this Goblin Camp appear in this adventure?
-
- Runtime state says:
-
- > Has the player already cleared it?
-
- Persistent state says:
-
- > Has this player discovered the Goblin Camp in their archive?
-
- These are different questions and should remain different structures.
-
----
-
- # 94\. Continuation Prompt
-
- Use the following prompt to continue development in a future conversation:
-
----
-
- ## CONTINUATION PROMPT — MERCHANT ADVENTURE GAME
-
- Continue development of my Unity game using the master development document below as the established project context.
-
- Do NOT restart the game design or propose a completely different game concept unless there is a serious architectural problem that genuinely requires reconsideration.
-
- The game is a text-based adventure/shop RPG.
-
- The player owns a shop and personally goes on adventures to obtain inventory that can be sold, kept, used, displayed, or incorporated into future shop systems.
-
- The player chooses three keywords before an adventure.
-
- A deterministic:
-
-```
-Seed + Keywords + GenerationVersion
-```
-
- produces the same underlying adventure structure.
-
- The adventure is a node-based graph containing interconnected events.
-
- The adventure has runtime dungeon state.
-
- Events use:
-
-```
-Conditions → Choices → Effects
-```
-
- and communicate through shared runtime state rather than directly referencing one another whenever possible.
-
- The canonical example is:
-
-```
-Goblin Camp
-    ↓
-Obtain Iron Key
-    ↓
-Dungeon State changes
-    ↓
-Iron Door
-    ↓
-"Use Iron Key" becomes available
-    ↓
-Door opens
-    ↓
-State-reactive event
-    ↓
-Ancient Guardian
-```
-
- The generator must understand:
-
- - Adventure Plans
-- Contracts
-- Dependencies
-- Reachability
-- Required objectives
-- Item sources
-- Dependency ordering
-- Validation
-
- The generator must validate the adventure before presenting it to the player.
-
- The first vertical slice is the:
-
- > **Iron Door Prototype**
-
- Its flow is:
+ It only needs to prove:
 
 ```
 Shop
  ↓
-Choose Forest / Ruins / Iron
+Three Keywords
  ↓
-Generate Seed
+Seed
  ↓
-Generate Adventure
+Deterministic Generation
  ↓
-Validate Adventure
+Validation
  ↓
 Node Map
  ↓
-Goblin Camp
+Goblin
  ↓
 Iron Key
  ↓
@@ -2896,7 +2159,7 @@ Loot
  ↓
 Exit
  ↓
-Return to Shop
+Shop
  ↓
 Sell / Keep
  ↓
@@ -2905,288 +2168,438 @@ Customer / Reward
 Archive
 ```
 
- Combat is inspired by the attack-linking concept from Legaia 2: Duel Saga.
-
- The game does NOT use MP or Spirit systems.
-
- Weapons have combat vocabularies.
-
- Example:
-
-```
-Iron Sword
-
-HIGH
-LOW
-LEFT
-RIGHT
-```
-
- Attack inputs form sequences.
-
- Example:
-
-```
-LOW → LOW → HIGH
-```
-
- which can resolve into:
-
-```
-Iron Fang
-```
-
- Unknown sequences produce improvised attacks.
-
- Staffs use the same sequence architecture with different vocabularies.
-
- Example:
-
-```
-FIRE → WIND → FIRE
-=
-Flame Spiral
-```
-
- The architecture uses:
-
-```
-Definition → Instance → Runtime State
-```
-
- Examples:
-
-```
-EventDefinition → EventInstance
-NodeDefinition → NodeInstance
-EnemyDefinition → EnemyInstance
-WeaponDefinition → Runtime Weapon Data
-```
-
- ScriptableObjects are intended primarily for authored content.
-
- They should NOT contain mutable state belonging to an individual adventure or player.
-
- Runtime state belongs to ordinary runtime classes/structures.
-
- Persistent player state includes things such as:
-
-```
-Gold
-Shop Level
-Reputation
-Stored Items
-Discovered Techniques
-Unlocked Content
-Archive
-```
-
- Adventure runtime state includes things such as:
-
-```
-Current Node
-Visited Nodes
-Resolved Events
-Dungeon Flags
-Adventure Inventory
-Current HP
-Temporary Effects
-```
-
- The project structure currently follows this conceptual organization:
-
-```
-Assets/
-└── _Game/
-    ├── Core/
-    ├── Data/
-    ├── Adventure/
-    ├── Generation/
-    ├── Events/
-    ├── Combat/
-    ├── Player/
-    ├── Shop/
-    ├── Archive/
-    ├── Save/
-    ├── UI/
-    ├── Scenes/
-    ├── Prefabs/
-    ├── Art/
-    └── Audio/
-```
-
- We are deliberately avoiding unnecessary complexity such as ECS, networking, elaborate dependency injection, mod support, or dozens of managers during the prototype phase.
-
- The game should use a clean separation between:
-
-```
-Game Data
-Game Logic
-Runtime State
-Persistent State
-Unity Presentation
-```
-
- The UI should display and issue commands to the game systems rather than contain gameplay rules.
-
- The generator and validator should be ordinary C# logic wherever practical so they can be tested independently of the Unity UI.
-
- The high-level game flow is:
-
-```
-MainMenu
- ↓
-Shop
- ↓
-AdventurePreparation
- ↓
-AdventureGeneration
- ↓
-Adventure
- ↓
-Combat / Event
- ↓
-Adventure
- ↓
-AdventureComplete
- ↓
-Shop
-```
-
- GitHub is now part of the development workflow.
-
- I will maintain a GitHub repository and make commits as we complete stable milestones.
-
- Use a development process like:
-
-```
-Design
- ↓
-Small Implementation Step
- ↓
-Test
- ↓
-Fix
- ↓
-Stable
- ↓
-Git Commit
- ↓
-Next Step
-```
-
- Prefer small meaningful commits such as:
-
-```
-Add adventure seed model
-Implement keyword definition
-Add dungeon state runtime
-Implement event condition evaluation
-Add deterministic generation
-Implement adventure validation
-Add technique sequence matching
-```
-
- Do not assume the entire project is implemented.
-
- Current status:
-
-```
-Game Design                  COMPLETE
-Vertical Slice Design        COMPLETE
-Adventure Data Design        COMPLETE CONCEPTUALLY
-Event/State Architecture     COMPLETE CONCEPTUALLY
-Combat Architecture          COMPLETE CONCEPTUALLY
-Unity Architecture           COMPLETE CONCEPTUALLY
-GitHub Workflow              ESTABLISHED
-
-C# Implementation            NOT YET COMPLETE
-```
-
- ## CURRENT TASK
-
- Begin the **concrete C# implementation of the foundational data model**.
-
- Do NOT immediately dump hundreds of lines of code.
-
- First briefly confirm the intended implementation order and explain any final architectural decisions that need to be made before coding.
-
- Then implement the foundational structures in small batches, beginning with:
-
-```
-GameID
-AdventureSeed
-KeywordDefinition
-AdventurePlan
-NodeDefinition
-NodeInstance
-EventDefinition
-EventInstance
-DungeonState
-PlayerRuntimeState
-Adventure
-AdventureResult
-```
-
- For each implementation:
-
- - Explain its purpose briefly
-- Explain why it is a ScriptableObject, class, struct, enum, or other type
-- Show the concrete C# code
-- Explain where the file should go in the Unity project
-- Explain how it connects to the other structures
-- Keep the implementation appropriate for the current prototype rather than overengineering it
-
- After a logical batch is complete, stop and let us test it before moving on.
-
- We will then build:
-
-```
-EventCondition
-EventEffect
-AdventureContract
-Dependency
-```
-
- followed by:
-
-```
-AdventureGenerator
-AdventureValidator
-```
-
- The first major technical milestone is:
-
-```
-Seed
-+
-Forest / Ruins / Iron
-        ↓
-AdventureGenerator
-        ↓
-AdventurePlan
-        ↓
-Adventure
-        ↓
-AdventureValidator
-        ↓
-Validation PASS
-```
-
- The generated adventure should eventually be inspectable through debug output before we build the full UI.
-
- Remember:
-
- > **Do not optimize for maximum abstraction. Optimize for a clean architecture that is easy to understand, test, expand, and maintain.**
-
- The ultimate goal is to create reusable authored content that can generate many interconnected adventures while preserving deterministic seeds, meaningful dependencies, state-reactive events, and different player-driven outcomes.
+ The architecture should be designed for future expansion, but the first implementation should not attempt to build every future system.
 
 ---
 
- ## END CONTINUATION PROMPT
+ # 62\. GitHub Repository
 
- The next conversation should begin directly with the **foundational C# data model implementation**, not with another explanation of the game's overall concept.
+ The project is maintained in GitHub.
 
- For GitHub, I’d recommend we treat each major working milestone as a checkpoint. That way, if we later discover that the generator architecture needs adjustment, we can safely return to the last known-good commit instead of untangling a huge pile of changes.
+ Repository:
 
- **Next time, paste the continuation prompt and we’ll start with `GameID`, `AdventureSeed`, and `KeywordDefinition`.**
+```
+DungeonTextAdventure
+```
+
+ GitHub is intended to become the persistent project source of truth.
+
+ The repository should contain the Unity project and documentation.
+
+ The current intended documentation structure may eventually become:
+
+```
+docs/
+├── GAME_DESIGN.md
+├── DATA_MODEL.md
+├── ARCHITECTURE.md
+├── PROCEDURAL_GENERATION.md
+├── COMBAT_DESIGN.md
+└── DEVELOPMENT_LOG.md
+```
+
+ These additional documents should be introduced when they become useful rather than created prematurely.
+
+ `GAME_DESIGN.md` remains the master handoff document.
+
+---
+
+ # 63\. Git Workflow
+
+ Development will happen incrementally.
+
+ Each meaningful architectural or implementation milestone should receive a Git commit.
+
+ The commit history should make it possible to understand how the project evolved.
+
+ The intended progression is:
+
+```
+Commit 1
+Game Design + Vertical Slice Foundation
+
+        ↓
+
+Commit 2
+Adventure Data Model
+
+        ↓
+
+Commit 3
+Event / State Architecture
+
+        ↓
+
+Commit 4
+Procedural Generation Foundation
+
+        ↓
+
+Commit 5
+Combat Architecture
+
+        ↓
+
+Commit 6+
+Unity Implementation
+```
+
+ Commit messages should be concise and descriptive.
+
+ Example:
+
+```
+docs: establish game design and vertical slice foundation
+```
+
+ Future examples:
+
+```
+docs: define adventure data model
+
+feat: add adventure runtime foundation
+
+feat: add event condition and effect system
+
+feat: add deterministic adventure generator
+
+feat: add adventure validation
+
+feat: add attack linking combat
+```
+
+ The exact commit structure can change as implementation develops.
+
+---
+
+ # 64\. First Git Commit
+
+ The first project commit establishes the design foundation.
+
+ Recommended commit message:
+
+```
+docs: establish game design and vertical slice foundation
+```
+
+ The first commit should primarily establish:
+
+ - README
+- Master game design document
+- Initial `.gitignore`
+- Basic repository/project foundation
+
+ It should not attempt to implement the procedural generator or complete game architecture.
+
+---
+
+ # 65\. Unity .gitignore Principle
+
+ The repository should ignore Unity-generated/cache files such as:
+
+```
+Library/
+Temp/
+Obj/
+Build/
+Builds/
+Logs/
+UserSettings/
+```
+
+ The following important Unity project directories should remain tracked:
+
+```
+Assets/
+Packages/
+ProjectSettings/
+```
+
+ `Packages/manifest.json` and `Packages/packages-lock.json` should be committed so package configuration remains reproducible.
+
+ IDE-generated files and operating-system files should also generally be ignored.
+
+---
+
+ # 66\. Development Roadmap
+
+ The current roadmap is:
+
+```
+1. Game Design
+        ↓
+2. Vertical Slice Design
+        ↓
+3. Data Model                     ← CURRENT
+        ↓
+4. Event / State Architecture
+        ↓
+5. Procedural Generation
+        ↓
+6. Combat Architecture
+        ↓
+7. Unity Project Architecture
+        ↓
+8. Implement Vertical Slice
+        ↓
+9. Playtest
+        ↓
+10. Adjust Design
+        ↓
+11. Expand Game
+```
+
+ Completed:
+
+```
+Game Design
+Vertical Slice Design
+Initial Repository Foundation
+```
+
+ Current:
+
+```
+Adventure Data Model
+```
+
+---
+
+ # 67\. Current Development Task
+
+ The next task is to complete the **Adventure Data Model**.
+
+ Before writing substantial Unity code, formally define:
+
+```
+Adventure
+AdventurePlan
+AdventureSeed
+KeywordDefinition
+
+Node
+NodeInstance
+
+EventDefinition
+EventInstance
+
+DungeonState
+
+EventCondition
+EventEffect
+
+AdventureContract
+Dependency
+
+PlayerRuntimeState
+AdventureResult
+```
+
+ For each, determine:
+
+ 1. What it represents
+2. Whether it is authored data, generated data, runtime state, or persistent player data
+3. Whether it should likely be a Unity ScriptableObject, C# class, struct, enum, or other structure
+4. What it should contain
+5. What it should NOT contain
+6. What it should reference
+7. Whether it needs to be serialized/saved
+8. How it interacts with the other systems
+
+ Particular attention must be paid to:
+
+ - EventDefinition vs EventInstance
+- Node definition vs NodeInstance
+- Authored content vs generated content
+- Generated adventure state vs persistent player state
+- Deterministic generation
+- Reconstructable generated data vs mutable runtime state
+
+ Do not begin by dumping a giant amount of C# code.
+
+ First establish:
+
+```
+Conceptual Model
+      ↓
+Relationships
+      ↓
+Ownership
+      ↓
+Serialization Strategy
+      ↓
+Runtime Flow
+      ↓
+Implementation
+```
+
+ Only after the conceptual architecture is agreed upon should it be converted into concrete Unity/C# code.
+
+---
+
+ # 68\. Architectural Requirements
+
+ The final architecture must support:
+
+ - Deterministic seeded generation
+- Three-keyword adventure inputs
+- Interconnected events
+- Dungeon state
+- Conditions and effects
+- Adventure dependencies/contracts
+- Procedural validation
+- Reusable authored content
+- Runtime event instances
+- Runtime node instances
+- Shared seeds producing the same underlying adventure
+- Player decisions producing different runtime outcomes
+- Save/resume capability where appropriate
+- Reconstructing generated adventure structure when possible
+- Persistent shop progression
+- A clean separation between adventure state and player persistence
+- Expansion without requiring the entire architecture to be rewritten
+
+---
+
+ # 69\. Ultimate Content-System Goal
+
+ The architecture should allow the developer to author content such as:
+
+ > Goblin Camp
+
+ once, while allowing the generator to create many different instances of that event.
+
+ It should also allow events to interact through state without requiring them to know about each other directly.
+
+ The ultimate goal is for the content system to make it possible to create complex adventures from relatively simple reusable building blocks.
+
+ For example:
+
+```
+Goblin Camp
+    ↓
+gives Iron Key
+    ↓
+Dungeon State
+    ↓
+Iron Door checks for Iron Key
+    ↓
+Door opens
+    ↓
+Dungeon State changes
+    ↓
+Ancient Guardian reacts
+```
+
+ None of these events need to directly reference one another.
+
+---
+
+ # 70\. Design Philosophy
+
+ The project should favor:
+
+ - Data-driven systems
+- Deterministic generation
+- Reusable content
+- Small composable systems
+- Explicit state
+- Validation over assumption
+- Separation of authored and runtime data
+- Separation of adventure and persistent player state
+- Extensibility
+- Testability
+- Clear ownership of state
+
+ Avoid:
+
+ - Large monolithic managers
+- Hardcoded event-to-event dependencies
+- Special-case procedural generation logic everywhere
+- Mutable state inside ScriptableObjects
+- Global uncontrolled randomness
+- Systems that require every future feature to be known in advance
+- Building the entire game before validating the vertical slice
+
+---
+
+ # 71\. Project Development Method
+
+ Development should proceed in deliberate stages.
+
+ For each major system:
+
+```
+1. Discuss the design
+2. Identify responsibilities
+3. Define data relationships
+4. Identify edge cases
+5. Agree on architecture
+6. Implement a small foundation
+7. Test it
+8. Commit it
+9. Move to the next system
+```
+
+ The goal is to avoid creating large amounts of code before the architecture has been understood.
+
+ The vertical slice should remain the guiding implementation target.
+
+---
+
+ # 72\. Important Rule for Future Development
+
+ Do not expand the project simply because a system could theoretically be made more sophisticated.
+
+ When implementing the prototype, ask:
+
+ > **Does this prove something necessary for the Iron Door Prototype?**
+
+ If not, defer it unless it is required to establish a sound architectural foundation.
+
+ The first objective is not to build the entire game.
+
+ The first objective is to prove that the game's fundamental architecture and gameplay loop work.
+
+---
+
+ # 73\. Current Project State
+
+ At the time this document was created/updated:
+
+```
+Game Concept:
+COMPLETE
+
+Core Game Loop:
+DESIGNED
+
+Vertical Slice:
+DESIGNED
+
+Iron Door Prototype:
+DESIGNED
+
+GitHub Repository:
+ESTABLISHED
+
+Master Game Design Document:
+ESTABLISHED
+
+Adventure Data Model:
+NEXT
+
+Event / State Architecture:
+NOT STARTED
+
+Procedural Generator:
+NOT STARTED
+
+Combat Architecture:
+NOT STARTED
+
+Unity Vertical Slice Implementation:
+NOT STARTED
+```
+
+---
