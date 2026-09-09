@@ -6,7 +6,7 @@ A text-based adventure/shop RPG where the player explores a mysterious world, ga
 
 Game Design: Complete  
 Vertical Slice Design: Complete  
-Data Model: In Progress
+Adventure Data Model: Complete
 
 ## Current Vertical Slice
 
@@ -18,8 +18,8 @@ Shop → Keywords → Seed → Adventure → Validation → Exploration → Comb
 
 1. Game Design — Complete
 2. Vertical Slice Design — Complete
-3. Data Model — Next
-4. Event / State Architecture
+3. Data Model — Complete
+4. Event / State Architecture — Current
 5. Procedural Generation
 6. Combat Architecture
 7. Unity Project Architecture

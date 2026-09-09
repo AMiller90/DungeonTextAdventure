@@ -1,9 +1,10 @@
  # Merchant Adventure Game — Master Game Design & Development Document
 
  **Repository:** `DungeonTextAdventure`\
- **Current Development Stage:** Adventure Data Model\
+ **Current Development Stage:** Event / State Architecture
  **Game Design:** Complete\
  **Vertical Slice Design:** Complete\
+ **Adventure Data Model:** Complete\
  **Implementation:** Not yet started
 
 ---
@@ -485,42 +486,166 @@ False
 
  # 14\. Node Definition vs Node Instance
 
- The same distinction applies to nodes.
+ The game distinguishes between authored node definitions and generated node instances.
 
- A conceptual authored node/template may define what a node can contain or what role it serves.
+NodeDefinition
+A NodeDefinition is authored game content.
 
- A generated `NodeInstance` represents the actual node created inside one specific adventure.
+It describes the role or archetype of a node that may appear in a generated adventure.
 
- For example:
+Examples include:
 
+Combat Node
+Treasure Node
+Story Node
+Shrine Node
+Secret Node
+Boss Node
+Exit Node
+A NodeDefinition is reusable authored content.
+
+It must not contain mutable state belonging to a particular adventure or player.
+
+It may describe:
+
+Node type
+Display information
+Allowed event types
+Generation tags
+Theme tags
+Generation weights
+Other authored constraints
+A NodeDefinition does not represent an actual location in a particular generated adventure.
+
+NodeInstance
+A NodeInstance represents an actual generated node inside one specific adventure.
+
+Example:
 ```
-Node Definition / Template:
+NodeDefinition:
 Combat Node
 
-Node Instance:
-Adventure Seed 58392014
-Node ID 7
-
-Position:
-Generated
+NodeInstance:
+Adventure ID: A123
+Node ID: N07
 
 Connections:
-Node 3
-Node 8
-Node 11
+N03
+N08
+N11
 
 Event:
-Goblin Camp Instance
+Goblin Camp EventInstance
 
 Visited:
-False
+false
 
 Resolved:
-False
+false
 ```
+The NodeInstance owns the identity and generated relationships of that particular node.
 
- A generated adventure therefore contains runtime/generated instances rather than modifying the authored definitions.
+Mutable runtime state belonging to the node must remain separate from the authored NodeDefinition.
 
+The important distinction is:
+```
+NodeDefinition
+    = reusable authored template/archetype
+
+NodeInstance
+    = generated occurrence in one adventure
+```
+The generator may select a NodeDefinition and use it to construct a NodeInstance, but it must never modify the authored definition to represent runtime state.
+
+# 14.A\. Adventure Data Model Ownership Rules
+The adventure architecture uses four conceptual data categories.
+
+Authored Data
+Authored data is reusable content created by the developer.
+
+Examples include:
+KeywordDefinition
+NodeDefinition
+EventDefinition
+ItemDefinition
+EnemyDefinition
+WeaponDefinition
+TechniqueDefinition
+CustomerDefinition
+
+Unity ScriptableObject assets are the preferred representation for authored definitions where appropriate.
+
+Authored definitions must not contain mutable state belonging to an individual adventure or player.
+
+Generated Data
+Generated data is created deterministically from the adventure generation inputs.
+
+Examples include:
+
+AdventureSeed
+AdventurePlan
+Selected keyword identities
+NodeInstance
+EventInstance
+Generated event parameters
+Generated enemy configurations
+Generated loot placement
+Contracts
+Dependencies
+Generated data describes the structure and content of one particular adventure.
+
+Runtime Adventure State
+Runtime state describes what has happened during the current adventure.
+
+Examples include:
+
+Current node
+Visited nodes
+Resolved events
+Dungeon flags
+Obtained adventure items
+Defeated enemies
+Player health
+Current combat
+Temporary effects
+Current adventure inventory
+Runtime state belongs to the current adventure and must not be stored inside authored definitions.
+
+Persistent Player State
+Persistent player state survives after an adventure ends.
+
+Examples include:
+
+Gold
+Reputation
+Shop upgrades
+Stored inventory
+Unlocked content
+Customers
+Expedition archive
+Other long-term progression
+Persistent player state must remain separate from the runtime state of an individual adventure.
+
+Ownership Principle
+The architecture follows this rule:
+```
+Authored Definition
+    ↓
+Generation
+    ↓
+Generated Instance
+    ↓
+Runtime State
+    ↓
+Adventure Result
+    ↓
+Persistent Player State
+```
+Each layer owns its own responsibilities.
+
+A lower-level runtime change must not mutate reusable authored content.
+
+Persistent progression must not be required to reconstruct the internal runtime state of an unrelated completed adventure.
 ---
 
  # 15\. Adventure Generation Pipeline
@@ -766,6 +891,58 @@ Attempt 2 → Valid
  Another player using the same generation inputs will arrive at the same valid generated adventure.
 
  This avoids using uncontrolled randomness to repair generation failures.
+
+ # 21A\. Adventure Generation Identity
+ The reproducible identity of a generated adventure is:
+ ```
+ AdventureGenerationInput
+├── Seed
+├── Keywords
+├── GeneratorVersion
+└── GenerationAttempt
+```
+Seed is the base deterministic seed for the adventure.
+
+Keywords are the three player-selected keyword identities.
+
+GeneratorVersion identifies the generation algorithm/content version required to reproduce the adventure.
+
+GenerationAttempt identifies the deterministic retry used when an earlier generated result failed validation.
+
+The same complete generation input must produce the same validated generated adventure.
+
+Conceptually:
+```Seed
+  +
+Keywords
+  +
+GeneratorVersion
+  +
+GenerationAttempt
+      ↓
+Deterministic Generator
+      ↓
+Generated Adventure
+      ↓
+Validation
+```
+If an attempt fails validation, the generator may retry using another deterministic generation attempt.
+
+For example:
+```Seed 58392014
+Attempt 0 → Invalid
+Attempt 1 → Invalid
+Attempt 2 → Valid
+```
+The generator must not use uncontrolled randomness to repair a failed generation attempt.
+
+This allows the same adventure to be reconstructed consistently by different players, builds, or save/load operations when the same generation inputs and compatible content are available.
+
+The generation identity describes the generated structure.
+
+It does not replace runtime state.
+
+Two players can share the same generated adventure while having different runtime states because their choices and actions differ.
 
 ---
 
